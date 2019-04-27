@@ -8,5 +8,6 @@ ThisBuild / organizationName := "example"
 lazy val root = (project in file("."))
   .settings(
     name := "Goose Game",
-    libraryDependencies += scalaTest % Test
+    libraryDependencies += scalaTest % Test, 
+    libraryDependencies += "org.typelevel" %% "cats-core" % "1.6.0"
   )
