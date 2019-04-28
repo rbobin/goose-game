@@ -3,6 +3,7 @@ package example
 import example.GameEngine.{Player, Position}
 
 import scala.collection.immutable.ListMap
+import scala.util.Random
 import scala.util.matching.Regex
 
 
@@ -25,19 +26,25 @@ object GameEngine {
     }
   }
 
-  val addPlayerRegex: Regex = """add player (\w+)""".r
-  val movePlayerRegex: Regex = """move (\w+) (\d+), (\d+)""".r
+  val addPlayerRegex: Regex = """add player (\w+)$""".r
+  val movePlayerRegex: Regex = """move (\w+) (\d+), (\d+)$""".r
+  val movePlayerWithRollRegex: Regex = """move (\w+)$""".r
+
   val victoryPosition: Position = Position(63)
+  val random: Random = Random.self
 
   def processInput(currentState: GameState, input: () => String): GameState = {
     val state = input() match {
-      case addPlayerRegex(name) => addPlayer(name, currentState)
+      case addPlayerRegex(name)          => addPlayer(name, currentState)
       case movePlayerRegex(name, r1, r2) => movePlayer(name, r1.toInt, r2.toInt, currentState)
-      case _ => currentState.copy(message = "Unrecognized input")
+      case movePlayerWithRollRegex(name) => movePlayer(name, rollDice, rollDice, currentState)
+      case _                             => currentState.copy(message = "Unrecognized input")
     }
     Console.println(state.message)
     state
   }
+
+  def rollDice: Int = random.nextInt(6) + 1
 
   def addPlayer(name: Player, state: GameState): GameState =
     if (state.players.contains(name)) {

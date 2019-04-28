@@ -20,6 +20,7 @@ class HelloSpec extends Specification with ScalaCheck {
     player that reaches victory position wins $movePlayer2
     follows victory specification $victorySpec
     follows bouncing specification $bounceSpec
+    follows dice roll specification $diceRollSpec
   """
 
   private def addPlayer1 =
@@ -85,14 +86,22 @@ class HelloSpec extends Specification with ScalaCheck {
   private def victorySpec = {
     val state = GameState(ListMap.empty ++ List("Pippo" -> Position(60)))
 
-    val state1 = GameEngine.processInput(state, { () => "move Pippo 1, 2" })
-    state1.message mustEqual "Pippo rolls 1, 2. Pippo moves from 60 to 63. Pippo Wins!!"
+    val newState = GameEngine.processInput(state, { () => "move Pippo 1, 2" })
+    newState.message mustEqual "Pippo rolls 1, 2. Pippo moves from 60 to 63. Pippo Wins!!"
   }
 
   private def bounceSpec = {
     val state = GameState(ListMap.empty ++ List("Pippo" -> Position(60)))
 
-    val state1 = GameEngine.processInput(state, { () => "move Pippo 3, 2" })
-    state1.message mustEqual "Pippo rolls 3, 2. Pippo moves from 60 to 63. Pippo bounces! Pippo returns to 61"
+    val newState = GameEngine.processInput(state, { () => "move Pippo 3, 2" })
+    newState.message mustEqual "Pippo rolls 3, 2. Pippo moves from 60 to 63. Pippo bounces! Pippo returns to 61"
+  }
+
+  private def diceRollSpec = {
+    val state = GameState(ListMap.empty ++ List("Pippo" -> Position(4)))
+
+    val newState = GameEngine.processInput(state, { () => "move Pippo" })
+    newState.message must contain("Pippo rolls")
+    newState.message must contain("Pippo moves")
   }
 }
