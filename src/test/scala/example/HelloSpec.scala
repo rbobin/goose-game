@@ -1,37 +1,38 @@
 package example
 
-import org.scalacheck.Prop.{BooleanOperators, forAll}
-import org.scalacheck.Properties
-import org.scalatest._
+import org.scalacheck.Prop.BooleanOperators
+import org.specs2.{Specification, _}
 
+import scala.collection.immutable._
 
-class HelloSpec extends Properties("addPlayer") with Matchers {
+class HelloSpec extends Specification with ScalaCheck {
+  def is = s2"""
 
-  property("existing-players") = forAll { (players: Set[String], player: String) =>
-    (players.nonEmpty && (!players.contains(player))) ==> {
-      val state = GameState(players.toList)
-      val changedState = GameEngine.addPlayer(player, state)
+  "add player" command:
+    adds a player if there is no such name $e1
+    does not add a player if there is such name $e2
 
-      changedState.players == player :: players.toList &&
-      changedState.message == s"players: ${(player :: players.toList).mkString(", ")}"
+  """
+
+  def e1 =
+    prop { (players: Set[String], player: String) =>
+      !players.contains(player) ==> {
+        val state = GameState(ListMap.empty ++ players.toList.map(n => n -> 0))
+        val changedState = GameEngine.addPlayer(player, state)
+
+        (changedState.players.keySet mustEqual players + player) and
+          (changedState.message mustEqual s"players: ${(players.toList :+ player).mkString(", ")}")
+      }
     }
-  }
 
-  property("no-players") = forAll { player: String =>
-    val state = GameState()
-    val changedState = GameEngine.addPlayer(player, state)
+  def e2 =
+    prop { players: List[String] =>
+      players.nonEmpty ==> {
+        val state = GameState(ListMap.empty ++ players.map(n => n -> 0))
+        val changedState = GameEngine.addPlayer(players.head, state)
 
-    changedState.players == List(player) &&
-    changedState.message == s"players: $player"
-  }
-
-  property("duplicate-player") = forAll { players: List[String] =>
-    players.nonEmpty ==> {
-      val state = GameState(players)
-      val changedState = GameEngine.addPlayer(players.head, state)
-
-      changedState.players == players &&
-      changedState.message == s"${players.head}: already existing player"
+        (changedState.players.keySet mustEqual players.toSet) and
+          (changedState.message mustEqual s"${players.head}: already existing player")
+      }
     }
-  }
 }

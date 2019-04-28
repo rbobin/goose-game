@@ -2,6 +2,7 @@ package example
 
 import example.GameEngine.Player
 
+import scala.collection.immutable.ListMap
 import scala.util.matching.Regex
 
 
@@ -20,21 +21,21 @@ object GameEngine {
 
   def processInput(currentState: GameState, input: () => String): GameState = {
     val state = input() match {
-      case addPlayerRegex(player) => addPlayer(player, currentState)
+      case addPlayerRegex(name) => addPlayer(name, currentState)
       case _ => currentState.copy(message = "Unrecognized input")
     }
     Console.println(state.message)
     state
   }
 
-  def addPlayer(player: Player, state: GameState): GameState =
-    if (state.players.contains(player)) {
-      state.copy(message = s"$player: already existing player")
+  def addPlayer(name: Player, state: GameState): GameState =
+    if (state.players.contains(name)) {
+      state.copy(message = s"$name: already existing player")
     } else {
-      val players = player :: state.players
-      state.copy(players = players, message = s"players: ${players.mkString(", ")}")
+      val players = state.players + (name -> 0)
+      state.copy(players = players, message = s"players: ${players.keySet.mkString(", ")}")
     }
 
 }
 
-case class GameState(players: List[Player] = Nil, message: String = "")
+case class GameState(players: ListMap[Player, Int] = ListMap.empty, message: String = "")

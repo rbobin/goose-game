@@ -8,6 +8,8 @@ ThisBuild / organizationName := "example"
 lazy val root = (project in file("."))
   .settings(
     name := "Goose Game",
-    libraryDependencies += scalaTest % Test,
-    libraryDependencies += scalaCheck % Test
+    libraryDependencies += scalaCheck % Test,
+    libraryDependencies += specs2 % Test,
+    libraryDependencies += specs2Check % Test,
+    scalacOptions in Test ++= Seq("-Yrangepos")
   )
