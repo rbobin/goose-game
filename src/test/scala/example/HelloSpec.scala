@@ -21,6 +21,7 @@ class HelloSpec extends Specification with ScalaCheck {
     follows victory specification $victorySpec
     follows bouncing specification $bounceSpec
     follows dice roll specification $diceRollSpec
+    follows "The Bridge" specification $bridgeSpec
   """
 
   private def addPlayer1 =
@@ -60,11 +61,11 @@ class HelloSpec extends Specification with ScalaCheck {
   private def movePlayer2 =
     prop { (player: String, rollOne: Int, rollTwo: Int) =>
       player.nonEmpty ==> {
-        val startingPosition = Position(GameEngine.victoryPosition.value - rollOne - rollTwo)
+        val startingPosition = Position(GameEngine.victory.value - rollOne - rollTwo)
         val state = GameState(ListMap.empty + (player -> startingPosition))
         val changedState = GameEngine.movePlayer(player, rollOne, rollTwo, state)
 
-        (changedState.players(player).value mustEqual GameEngine.victoryPosition.value) and
+        (changedState.players(player).value mustEqual GameEngine.victory.value) and
           (changedState.message mustEqual s"$player rolls $rollOne, $rollTwo. $player moves " +
             s"from ${startingPosition.asString} to ${changedState.players(player).asString}. $player Wins!!")
       }
@@ -73,14 +74,14 @@ class HelloSpec extends Specification with ScalaCheck {
   private def movePlayerSpec = {
     val state = GameState(ListMap.empty ++ List("Pippo" -> Position(0), "Pluto" -> Position(0)))
 
-    val state1 = GameEngine.processInput(state, { () => "move Pippo 4, 2" })
-    state1.message mustEqual "Pippo rolls 4, 2. Pippo moves from Start to 6"
+    val state1 = GameEngine.processInput(state, { () => "move Pippo 4, 3" })
+    state1.message mustEqual "Pippo rolls 4, 2. Pippo moves from Start to 7"
 
     val state2 = GameEngine.processInput(state1, { () => "move Pluto 2, 2" })
     state2.message mustEqual "Pluto rolls 2, 2. Pluto moves from Start to 4"
 
     val state3 = GameEngine.processInput(state2, { () => "move Pippo 2, 3" })
-    state3.message mustEqual "Pippo rolls 2, 3. Pippo moves from 6 to 11"
+    state3.message mustEqual "Pippo rolls 2, 3. Pippo moves from 7 to 12"
   }
 
   private def victorySpec = {
@@ -103,5 +104,12 @@ class HelloSpec extends Specification with ScalaCheck {
     val newState = GameEngine.processInput(state, { () => "move Pippo" })
     newState.message must contain("Pippo rolls")
     newState.message must contain("Pippo moves")
+  }
+
+  private def bridgeSpec = {
+    val state = GameState(ListMap.empty ++ List("Pippo" -> Position(4)))
+
+    val newState = GameEngine.processInput(state, { () => "move Pippo 1, 1" })
+    newState.message mustEqual "Pippo rolls 1, 1. Pippo moves from 4 to The Bridge. Pippo jumps to 12"
   }
 }

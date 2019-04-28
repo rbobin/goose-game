@@ -22,6 +22,7 @@ object GameEngine {
   final case class Position(value: Int) extends AnyVal {
     def asString: String = value match {
       case 0 => "Start"
+      case 6 => "The Bridge"
       case v => v.toString
     }
   }
@@ -30,15 +31,18 @@ object GameEngine {
   val movePlayerRegex: Regex = """move (\w+) (\d+), (\d+)$""".r
   val movePlayerWithRollRegex: Regex = """move (\w+)$""".r
 
-  val victoryPosition: Position = Position(63)
+  val victory: Position = Position(63)
+  val bridgeStart: Position = Position(6)
+  val bridgeEnd: Position = Position(12)
+
   val random: Random = Random.self
 
   def processInput(currentState: GameState, input: () => String): GameState = {
     val state = input() match {
-      case addPlayerRegex(name)          => addPlayer(name, currentState)
+      case addPlayerRegex(name) => addPlayer(name, currentState)
       case movePlayerRegex(name, r1, r2) => movePlayer(name, r1.toInt, r2.toInt, currentState)
       case movePlayerWithRollRegex(name) => movePlayer(name, rollDice, rollDice, currentState)
-      case _                             => currentState.copy(message = "Unrecognized input")
+      case _ => currentState.copy(message = "Unrecognized input")
     }
     Console.println(state.message)
     state
@@ -61,22 +65,30 @@ object GameEngine {
     val oldPosition = state.players(name)
     val newPosition = Position(oldPosition.value + rollOne + rollTwo)
 
-    if (newPosition.value > victoryPosition.value) {
-      val bouncedPosition = Position(victoryPosition.value - (newPosition.value - victoryPosition.value))
+    val intermediateState = if (newPosition.value > victory.value) {
+      val bouncedPosition = Position(victory.value - (newPosition.value - victory.value))
       val newMessage = s"$name rolls $rollOne, $rollTwo. $name moves from ${oldPosition.asString} " +
-        s"to ${victoryPosition.asString}. $name bounces! $name returns to ${bouncedPosition.asString}"
+        s"to ${victory.asString}. $name bounces! $name returns to ${bouncedPosition.asString}"
       val newPlayers = state.players + (name -> bouncedPosition)
       val newState = state.copy(message = newMessage, players = newPlayers)
       newState
     } else {
-      val victoryMessage = if (newPosition == victoryPosition) s". $name Wins!!" else ""
-      val newMessage = s"$name rolls $rollOne, $rollTwo. $name moves from ${oldPosition.asString} " +
-        s"to ${newPosition.asString}" + victoryMessage
+      val message = s"$name rolls $rollOne, $rollTwo. $name moves from ${oldPosition.asString} to ${newPosition.asString}"
 
       val newPlayers = state.players + (name -> newPosition)
-      val newState = state.copy(message = newMessage, players = newPlayers)
+      val newState = state.copy(message = message, players = newPlayers)
       newState
     }
+
+    def applyModifications(s: GameState): GameState =
+      s.players(name).value match {
+        case victory.value => s.copy(message = s.message + s". $name Wins!!")
+        case bridgeStart.value => s.copy(message = s.message + s". $name jumps to ${bridgeEnd.asString}",
+          players = s.players + (name -> bridgeEnd))
+        case _ => s
+      }
+
+    applyModifications(intermediateState)
   }
 
 }
