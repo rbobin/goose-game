@@ -27,6 +27,7 @@ object GameEngine {
 
   val addPlayerRegex: Regex = """add player (\w+)""".r
   val movePlayerRegex: Regex = """move (\w+) (\d+), (\d+)""".r
+  val victoryPosition: Position = Position(63)
 
   def processInput(currentState: GameState, input: () => String): GameState = {
     val state = input() match {
@@ -47,16 +48,28 @@ object GameEngine {
     }
 
   def movePlayer(name: Player,
-                 diceRollOne: Int,
-                 diceRollTwo: Int,
+                 rollOne: Int,
+                 rollTwo: Int,
                  state: GameState): GameState = {
     val oldPosition = state.players(name)
-    val newPosition = Position(oldPosition.value + diceRollOne + diceRollTwo)
-    val newMessage = s"$name rolls $diceRollOne, $diceRollTwo. $name moves from ${oldPosition.asString} to " +
-      s"${newPosition.asString}"
-    val newPlayers = state.players + (name -> newPosition)
-    val newState = state.copy(message = newMessage, players = newPlayers)
-    newState
+    val newPosition = Position(oldPosition.value + rollOne + rollTwo)
+
+    if (newPosition.value > victoryPosition.value) {
+      val bouncedPosition = Position(victoryPosition.value - (newPosition.value - victoryPosition.value))
+      val newMessage = s"$name rolls $rollOne, $rollTwo. $name moves from ${oldPosition.asString} " +
+        s"to ${victoryPosition.asString}. $name bounces! $name returns to ${bouncedPosition.asString}"
+      val newPlayers = state.players + (name -> bouncedPosition)
+      val newState = state.copy(message = newMessage, players = newPlayers)
+      newState
+    } else {
+      val victoryMessage = if (newPosition == victoryPosition) s". $name Wins!!" else ""
+      val newMessage = s"$name rolls $rollOne, $rollTwo. $name moves from ${oldPosition.asString} " +
+        s"to ${newPosition.asString}" + victoryMessage
+
+      val newPlayers = state.players + (name -> newPosition)
+      val newState = state.copy(message = newMessage, players = newPlayers)
+      newState
+    }
   }
 
 }
