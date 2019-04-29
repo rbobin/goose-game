@@ -96,8 +96,7 @@ object GameEngine {
         case v if findOthersAtPosition(s).isDefined =>
           val maybeModifiedState = for {
             otherPlayerName <- findOthersAtPosition(s)
-            otherPlayerPosition = s.players(otherPlayerName)
-            otherPlayerUpdated = otherPlayerName -> otherPlayerPosition
+            otherPlayerUpdated = otherPlayerName -> oldPosition
             message = s". On ${Position(v).asString} there is $otherPlayerName, who returns to ${oldPosition.asString}"
           } yield s.copy(message = s.message + message, players = s.players + otherPlayerUpdated)
           maybeModifiedState.getOrElse(s)
