@@ -6,13 +6,18 @@ import org.specs2.{Specification, _}
 
 import scala.collection.immutable._
 
-class HelloSpec extends Specification with ScalaCheck {
+class GooseGameSpec extends Specification with ScalaCheck {
   def is =
     s2"""
+
+  invalid command:
+    prints the message $invalid
 
   "add player" command:
     adds a player if there is no such name $addPlayer1
     does not add a player if there is such name $addPlayer2
+    follows specification $addPlayerSpec
+    follows duplicated player specification $duplicatedSpec
 
   "move player" command:
     moves the player $movePlayer1
@@ -22,7 +27,34 @@ class HelloSpec extends Specification with ScalaCheck {
     follows bouncing specification $bounceSpec
     follows dice roll specification $diceRollSpec
     follows "The Bridge" specification $bridgeSpec
+    follows "Single Jump" specification $singleJumpSpec
+    follows "Multiple Jump" specification $multiJumpSpec
   """
+
+  private def invalid =
+    prop { input: String =>
+      val state = GameState()
+      val changedState = GameEngine.processInput(state, () => input)
+
+      changedState.message mustEqual s"Unrecognized input"
+    }
+
+  private def addPlayerSpec = {
+    val state = GameState()
+
+    val state1 = GameEngine.processInput(state, { () => "add player Pippo" })
+    state1.message mustEqual "players: Pippo"
+
+    val state2 = GameEngine.processInput(state1, { () => "add player Pluto" })
+    state2.message mustEqual "players: Pippo, Pluto"
+  }
+
+  private def duplicatedSpec = {
+    val state = GameState(ListMap.empty ++ List("Pippo" -> Position(0)))
+
+    val state1 = GameEngine.processInput(state, { () => "add player Pippo" })
+    state1.message mustEqual "Pippo: already existing player"
+  }
 
   private def addPlayer1 =
     prop { (players: Set[String], player: String) =>
@@ -111,5 +143,20 @@ class HelloSpec extends Specification with ScalaCheck {
 
     val newState = GameEngine.processInput(state, { () => "move Pippo 1, 1" })
     newState.message mustEqual "Pippo rolls 1, 1. Pippo moves from 4 to The Bridge. Pippo jumps to 12"
+  }
+
+  private def singleJumpSpec = {
+    val state = GameState(ListMap.empty ++ List("Pippo" -> Position(3)))
+
+    val newState = GameEngine.processInput(state, { () => "move Pippo 1, 1" })
+    newState.message mustEqual "Pippo rolls 1, 1. Pippo moves from 3 to 5, The Goose. Pippo moves again and goes to 7"
+  }
+
+  private def multiJumpSpec = {
+    val state = GameState(ListMap.empty ++ List("Pippo" -> Position(10)))
+
+    val newState = GameEngine.processInput(state, { () => "move Pippo 2, 2" })
+    newState.message mustEqual "Pippo rolls 2, 2. Pippo moves from 10 to 14, The Goose. Pippo moves again and goes " +
+      "to 18, The Goose. Pippo moves again and goes to 22"
   }
 }
