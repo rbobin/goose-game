@@ -10,7 +10,9 @@ import scala.util.matching.Regex
 object GooseGame extends App {
   println("SIGTERM for exit")
 
-  def printState: GameState => GameState = state => {Console.println(state.message); state}
+  def printState: GameState => GameState = state => {
+    Console.println(state.message); state
+  }
 
   val stream = Stream.continually({ () => scala.io.StdIn.readLine })
   stream.foldLeft(GameState())(printState apply GameEngine.processInput(_, _))
@@ -74,16 +76,31 @@ object GameEngine {
       state.copy(message = newMessage, players = players)
     }
 
+    def findOthersAtPosition(s: GameState): Option[Player] = {
+      val currentPlayerPosition = s.players(name)
+      (s.players - name).find { case (_, p) => p == currentPlayerPosition }.map(_._1)
+    }
+
     def applyModifications(s: GameState): GameState =
       s.players(name).value match {
         case victory.value => s.copy(message = s.message + s". $name Wins!!")
-        case bridgeStart.value => s.copy(message = s.message + s". $name jumps to ${bridgeEnd.asString}",
-          players = s.players + (name -> bridgeEnd))
+        case bridgeStart.value =>
+          val modifiedState = s.copy(message = s.message + s". $name jumps to ${bridgeEnd.asString}",
+            players = s.players + (name -> bridgeEnd))
+          applyModifications(modifiedState)
         case v if goose.contains(Position(v)) =>
           val goosePosition = Position(s.players(name).value + rollOne + rollTwo)
-          val gooseState = s.copy(message = s.message + s". $name moves again and goes to ${goosePosition.asString}",
+          val modifiedState = s.copy(message = s.message + s". $name moves again and goes to ${goosePosition.asString}",
             players = s.players + (name -> goosePosition))
-          applyModifications(gooseState)
+          applyModifications(modifiedState)
+        case v if findOthersAtPosition(s).isDefined =>
+          val maybeModifiedState = for {
+            otherPlayerName <- findOthersAtPosition(s)
+            otherPlayerPosition = s.players(otherPlayerName)
+            otherPlayerUpdated = otherPlayerName -> otherPlayerPosition
+            message = s". On ${Position(v).asString} there is $otherPlayerName, who returns to ${oldPosition.asString}"
+          } yield s.copy(message = s.message + message, players = s.players + otherPlayerUpdated)
+          maybeModifiedState.getOrElse(s)
         case _ => s
       }
 

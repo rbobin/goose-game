@@ -29,6 +29,7 @@ class GooseGameSpec extends Specification with ScalaCheck {
     follows "The Bridge" specification $bridgeSpec
     follows "Single Jump" specification $singleJumpSpec
     follows "Multiple Jump" specification $multiJumpSpec
+    follows "Prank" specification $prankSpec
   """
 
   private def invalid =
@@ -158,5 +159,12 @@ class GooseGameSpec extends Specification with ScalaCheck {
     val newState = GameEngine.processInput(state, { () => "move Pippo 2, 2" })
     newState.message mustEqual "Pippo rolls 2, 2. Pippo moves from 10 to 14, The Goose. Pippo moves again and goes " +
       "to 18, The Goose. Pippo moves again and goes to 22"
+  }
+
+  private def prankSpec = {
+    val state = GameState(ListMap.empty ++ List("Pippo" -> Position(15), "Pluto" -> Position(17)))
+
+    val newState = GameEngine.processInput(state, { () => "move Pippo 1, 1" })
+    newState.message mustEqual "Pippo rolls 1, 1. Pippo moves from 15 to 17. On 17 there is Pluto, who returns to 15"
   }
 }
